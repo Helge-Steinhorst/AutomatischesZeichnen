@@ -46,22 +46,29 @@ if DATEIPFAD:
     try:
         # --- EINSTELLUNGEN ---
         ABSTAND_OBEN = 20 * mm  # 20 mm = 2 cm
-
         breite, hoehe = A4
+
+        hoehe_beginEinspeisung = hoehe - ABSTAND_OBEN
+        hoehe_beginAbgang = hoehe - 75*mm
+
+
+
+        
         c = canvas.Canvas(DATEIPFAD, pagesize=A4)
 
         # --- DIE LINIE ZEICHNEN ---
         y_position = hoehe - ABSTAND_OBEN
         x_start = 20 * mm
         x_end = breite - 20 * mm
-        x_Mitte_des_Blattes = breite / 2
+
 
         c.setLineWidth(2)
         c.line(x_start, y_position, x_end, y_position)
         
 
-        if anzahlEinspeisungen == 1:
-            zeichnungen.zeichneEinspeisung.zeichne_eine_Einspeisung(c,x_Mitte_des_Blattes,y_position,1)
+        
+        zeichnungen.zeichneEinspeisung.zeichne_eine_Einspeisung(c,breite,hoehe_beginEinspeisung,anzahlEinspeisungen,messgerät)
+        c.line(x_start,hoehe_beginAbgang,x_end,hoehe_beginAbgang)
 
 
 
