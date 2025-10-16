@@ -3,6 +3,8 @@ from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import mm
 
+from PIL import Image, ImageDraw, ImageFont
+
 
 import tkinter as tk
 from tkinter import filedialog
@@ -34,9 +36,9 @@ print("Öffne das 'Speichern unter'-Fenster...")
 # Den "Speichern unter"-Dialog anzeigen
 # Der Benutzer wählt hier Ordner und Dateinamen aus.
 DATEIPFAD = filedialog.asksaveasfilename(
-    title="PDF-Datei speichern unter...",
-    defaultextension=".pdf",
-    filetypes=[("PDF-Dokumente", "*.pdf"), ("Alle Dateien", "*.*")]
+    title="PNG-Datei speichern unter...",
+    defaultextension=".png",
+    filetypes=[("PNG-Bild", "*.png"), ("Alle Dateien", "*.*")]
 )
 
 # --- 2. PDF NUR ERSTELLEN, WENN EIN DATEIPFAD AUSGEWÄHLT WURDE ---
@@ -44,36 +46,64 @@ DATEIPFAD = filedialog.asksaveasfilename(
 # Wenn der Benutzer auf "Abbrechen" klickt, ist DATEIPFAD leer.
 if DATEIPFAD:
     try:
-        # --- EINSTELLUNGEN ---
-        ABSTAND_OBEN = 20 * mm  # 20 mm = 2 cm
-        breite, hoehe = A4
-
-        hoehe_beginEinspeisung = hoehe - ABSTAND_OBEN
-        hoehe_beginAbgang = hoehe - 75*mm
-
-
-
+        # --- BILD-EINSTELLUNGEN (NEU) ---
+        DPI = 300  # Punkte pro Zoll, für eine gute Qualität
         
-        c = canvas.Canvas(DATEIPFAD, pagesize=A4)
+        # A4-Maße in Millimetern
+        A4_MM_BREITE = 210
+        A4_MM_HOEHE = 297
 
-        # --- DIE LINIE ZEICHNEN ---
-        y_position = hoehe - ABSTAND_OBEN
-        x_start = 20 * mm
-        x_end = breite - 20 * mm
+        # Umrechnung von mm in Pixel basierend auf DPI
+        breite = int((A4_MM_BREITE / 25.4) * DPI)
+        hoehe = int((A4_MM_HOEHE / 25.4) * DPI)
 
+        # Umrechnung der Abstände in Pixel
+        def mm_to_px(mm):
+            return int((mm / 25.4) * DPI)
 
-        c.setLineWidth(2)
-        c.line(x_start, y_position, x_end, y_position)
+        ABSTAND_OBEN = mm_to_px(20)
+        ABSTAND_SEITE = mm_to_px(20)
         
+        hoehe_beginEinspeisung = ABSTAND_OBEN
+        hoehe_beginAbgang = mm_to_px(75)
 
+        # Erstelle ein leeres, weißes Bild und ein Zeichenobjekt
+        img = Image.new('RGB', (breite, hoehe), 'white')
+        draw = ImageDraw.Draw(img)
+
+        # --- DIE LINIEN ZEICHNEN ---
+        # GEÄNDERT: Zeichenbefehle für Pillow verwenden
+        x_start = ABSTAND_SEITE
+        x_end = breite - ABSTAND_SEITE
+
+        # Obere Hauptlinie (Sammelschiene)
+        draw.line(
+            [(x_start, hoehe_beginEinspeisung), (x_end, hoehe_beginEinspeisung)], 
+            fill='black', 
+            width=3  # Pillow verwendet 'width' statt 'setLineWidth'
+        )
         
-        zeichnungen.zeichneEinspeisung.zeichne_eine_Einspeisung(c,breite,hoehe_beginEinspeisung,anzahlEinspeisungen,messgerät)
-        c.line(x_start,hoehe_beginAbgang,x_end,hoehe_beginAbgang)
+        # Untere Hauptlinie
+        draw.line(
+            [(x_start, hoehe_beginAbgang), (x_end, hoehe_beginAbgang)],
+            fill='black',
+            width=3
+        )
 
+        # --- ZEICHNUNGEN FÜR JEDE EINSPIESUNG HINZUFÜGEN ---
+        # Wir rufen die Zeichenfunktion für jedes gespeicherte Messgerät auf.
+        # HINWEIS: Ihre Funktion 'zeichne_eine_Einspeisung' muss angepasst werden!
+        zeichnungen.zeichneEinspeisung.zeichne_eine_Einspeisung(
+                draw,                  # Das 'draw'-Objekt statt des 'canvas'
+                breite,                # Breite in Pixeln
+                hoehe_beginEinspeisung, # Y-Position in Pixeln
+                anzahlEinspeisungen,   # Die Gesamtzahl
+                messgerät         # Der Name des Messgeräts
+        )
 
-
-
-        c.save()
+        # --- BILD SPEICHERN ---
+        # GEÄNDERT: 'save'-Methode des Bildobjekts
+        img.save(DATEIPFAD)
         print(f"\n✅ Erfolgreich! Die Datei wurde hier gespeichert:\n{DATEIPFAD}")
 
     except Exception as e:
@@ -83,4 +113,4 @@ else:
 
 # --- 3. WARTEN, BIS DER BENUTZER DAS FENSTER SCHLIESST ---
 print("\nDrücke die Enter-Taste, um das Programm zu beenden.")
-input() # Hält das Terminalfenster offen, bis Enter gedrückt wird
+input()
